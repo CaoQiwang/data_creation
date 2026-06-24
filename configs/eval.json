@@ -1,0 +1,14 @@
+{
+  "base_url": "https://api.siliconflow.cn/v1",
+  "api_key": "${SILICONFLOW_API_KEY}",
+  "model": "Qwen/Qwen3-8B",
+  "max_input_chars": 5000,
+  "sleep": 0.2,
+  "timeout": 60,
+  "retries": 2,
+  "temperature": 0.0,
+  "max_output_tokens": 400,
+  "extra_body": {
+    "enable_thinking": false
+  }
+}

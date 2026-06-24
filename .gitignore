@@ -1,0 +1,25 @@
+# Raw source data
+raw_data/
+
+# Generated datasets and intermediate outputs
+chunk_data/
+labeled_data/
+final_sft_data/
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Local editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp

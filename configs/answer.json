@@ -1,0 +1,13 @@
+{
+  "base_url": "https://api.siliconflow.cn/v1",
+  "api_key": "${SILICONFLOW_API_KEY}",
+  "model": "deepseek-ai/DeepSeek-V4-Flash",
+  "sleep": 0.2,
+  "timeout": 60,
+  "retries": 2,
+  "temperature": 0.2,
+  "max_output_tokens": 1200,
+  "extra_body": {
+    "enable_thinking": false
+  }
+}
