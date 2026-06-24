@@ -2,7 +2,7 @@
 raw_data/
 
 # Generated datasets and intermediate outputs
-chunk_data/
+
 labeled_data/
 final_sft_data/
 
