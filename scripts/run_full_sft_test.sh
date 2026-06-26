@@ -6,17 +6,22 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+if [[ -f ".env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source ".env"
+  set +a
+fi
+
 INPUT="chunk_data/test_200.jsonl"
-TAXONOMY="configs/military_sft_taxonomy_compact.json"
 
 SCORES_OUT="labeled_data/full_test_200_scores.jsonl"
-CLASSIFIED_OUT="labeled_data/full_test_200_classified.jsonl"
 QUESTIONS_OUT="labeled_data/full_test_200_questions.jsonl"
 ANSWERS_OUT="labeled_data/full_test_200_answers.jsonl"
 
 mkdir -p labeled_data
 
-echo "[1/4] Evaluate chunks"
+echo "[1/3] Evaluate chunks"
 python scripts/evaluate_sft_material.py \
   --input "$INPUT" \
   --output "$SCORES_OUT" \
@@ -24,24 +29,15 @@ python scripts/evaluate_sft_material.py \
   --limit 200 \
   --workers 8
 
-echo "[2/4] Classify evaluated data"
-python scripts/classify_sft_material.py \
-  --input "$SCORES_OUT" \
-  --output "$CLASSIFIED_OUT" \
-  --config configs/classify.json \
-  --taxonomy "$TAXONOMY" \
-  --min-score 7 \
-  --workers 2
-
-echo "[3/4] Generate questions"
+echo "[2/3] Generate questions"
 python scripts/generate_sft_questions.py \
-  --input "$CLASSIFIED_OUT" \
+  --input "$SCORES_OUT" \
   --output "$QUESTIONS_OUT" \
   --config configs/question.json \
   --min-score 7 \
   --workers 8
 
-echo "[4/4] Generate answers"
+echo "[3/3] Generate answers"
 python scripts/generate_sft_answers.py \
   --input "$QUESTIONS_OUT" \
   --output "$ANSWERS_OUT" \
@@ -51,6 +47,5 @@ python scripts/generate_sft_answers.py \
 echo
 echo "Done."
 echo "Scores:     $SCORES_OUT"
-echo "Classified: $CLASSIFIED_OUT"
 echo "Questions:  $QUESTIONS_OUT"
 echo "Answers:    $ANSWERS_OUT"

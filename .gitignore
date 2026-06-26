@@ -1,5 +1,9 @@
 # Raw source data
-raw_data/
+raw_data/*
+!raw_data/*.py
+
+# Local secrets
+.env
 
 # Generated datasets and intermediate outputs
 

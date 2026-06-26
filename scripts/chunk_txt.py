@@ -111,15 +111,17 @@ def iter_units(text: str) -> Iterable[tuple[str | None, str]]:
             yield from flush_buffer()
             continue
 
-        section = infer_section(line)
         if line == "目录":
             yield from flush_buffer()
             in_toc = True
             continue
+
+        section = infer_section(line)
         if in_toc:
-            if line == "前言":
+            if section and line != "目录":
                 in_toc = False
-                current_section = line
+                current_section = section
+                continue
             continue
         if section:
             yield from flush_buffer()
@@ -234,15 +236,19 @@ def build_chunks(
                 )
 
         if chunk_index == 0 and text_len(text) >= min_chars:
-            chunks.append(
-                TxtChunk(
-                    id=f"{source}#00001",
-                    text=text,
-                    source=source,
-                    chunk_index=1,
-                    char_count=text_len(text),
+            for part in split_long_text(text, max_chars):
+                if text_len(part) < min_chars:
+                    continue
+                chunk_index += 1
+                chunks.append(
+                    TxtChunk(
+                        id=f"{source}#{chunk_index:05d}",
+                        text=part,
+                        source=source,
+                        chunk_index=chunk_index,
+                        char_count=text_len(part),
+                    )
                 )
-            )
 
     return chunks
 

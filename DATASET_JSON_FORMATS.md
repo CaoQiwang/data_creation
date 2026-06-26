@@ -8,7 +8,6 @@
 raw_data
   -> chunk_data
   -> labeled_data/*_scores.jsonl
-  -> labeled_data/*_classified.jsonl
   -> labeled_data/*_questions.jsonl
   -> labeled_data/*_answers.jsonl
 ```
@@ -19,70 +18,6 @@ raw_data
 - 后一阶段通常保留前一阶段字段，并新增本阶段字段。
 - 答案生成阶段仍是中间数据，会保留前序字段并新增 `sft_answer`。
 - 最终 `final_sft_data` 的转换格式后续再定义。
-
-## 0. 分类目录
-
-文件：
-
-```text
-configs/military_sft_taxonomy_compact.json
-```
-
-用途：把 `military_sft_taxonomy/` 下的 markdown 分类目录汇总成机器可读标签表，供分类阶段召回候选标签。
-
-格式：
-
-```json
-{
-  "version": "0.1",
-  "description": "军事大模型SFT能力分类目录的紧凑机器可读版本，用于对评估后的文本块贴能力标签。",
-  "source_root": "D:\\czc\\work\\sft_data\\military_sft_taxonomy",
-  "source_files": [
-    "friendly/01-我方军事实体认知.md"
-  ],
-  "missing_from_catalog": [
-    "opponent/01-他方军事实体认知.md"
-  ],
-  "label_count": 944,
-  "labels": [
-    {
-      "id": "F0001",
-      "side": "friendly",
-      "side_name": "我方",
-      "l1": "我方军事实体认知",
-      "l2": "物资器材",
-      "leaf": "单兵携行物资识别",
-      "path": [
-        "我方",
-        "我方军事实体认知",
-        "物资器材",
-        "单兵携行物资识别"
-      ],
-      "source_file": "friendly/01-我方军事实体认知.md"
-    }
-  ]
-}
-```
-
-字段说明：
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| `version` | string | 分类目录版本 |
-| `description` | string | 文件说明 |
-| `source_root` | string | 原始分类 markdown 根目录 |
-| `source_files` | array[string] | 已纳入汇总的分类文件 |
-| `missing_from_catalog` | array[string] | 目录引用但本地缺失的文件 |
-| `label_count` | number | 标签总数 |
-| `labels` | array[object] | 标签列表 |
-| `labels[].id` | string | 标签 ID，`F` 表示我方，`O` 表示他方 |
-| `labels[].side` | string | `friendly` / `opponent` |
-| `labels[].side_name` | string | 中文侧别 |
-| `labels[].l1` | string | 一级能力域 |
-| `labels[].l2` | string | 二级能力域 |
-| `labels[].leaf` | string | 叶子能力项 |
-| `labels[].path` | array[string] | 中文完整路径 |
-| `labels[].source_file` | string | 来源分类文件 |
 
 ## 1. 分块数据
 
@@ -269,131 +204,7 @@ sft_material_eval
 }
 ```
 
-## 3. 分类标签数据
-
-典型文件：
-
-```text
-labeled_data/*_classified.jsonl
-```
-
-来源：评分数据。
-
-新增字段：
-
-```text
-sft_taxonomy_labels
-```
-
-格式：
-
-```json
-{
-  "id": "md_from_pdf/MinerU_markdown_军事理论教程.md#00001",
-  "text": "分块正文文本",
-  "source": "md_from_pdf/MinerU_markdown_军事理论教程.md",
-  "chunk_index": 1,
-  "char_count": 976,
-  "sft_material_eval": {
-    "score": 9,
-    "quality_level": "优秀",
-    "reason": "评分理由",
-    "issues": [],
-    "suggested_use": "建议用途"
-  },
-  "sft_taxonomy_labels": {
-    "primary": {
-      "id": "F0120",
-      "side": "friendly",
-      "side_name": "我方",
-      "l1": "我方军事知识与制度",
-      "l2": "军事法规",
-      "leaf": "法规问答生成",
-      "path": [
-        "我方",
-        "我方军事知识与制度",
-        "军事法规",
-        "法规问答生成"
-      ],
-      "source_file": "friendly/03-我方军事知识与制度.md"
-    },
-    "task_types": [
-      "qa",
-      "summary",
-      "extraction"
-    ],
-    "source_type": "policy_document",
-    "risk_label": "public_safe",
-    "confidence": 0.95,
-    "reason": "分类依据说明",
-    "evidence_keywords": [
-      "国防法",
-      "宪法"
-    ],
-    "candidate_label_ids": [
-      "F0120",
-      "F0118"
-    ],
-    "status": "ok"
-  }
-}
-```
-
-字段说明：
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| `sft_taxonomy_labels.primary` | object/null | 主标签；找不到合适分类时为 `null` |
-| `sft_taxonomy_labels.task_types` | array[string] | 推荐任务类型 |
-| `sft_taxonomy_labels.source_type` | string | 来源类型 |
-| `sft_taxonomy_labels.risk_label` | string | `public_safe` / `needs_caution` / `refuse_or_exclude` |
-| `sft_taxonomy_labels.confidence` | number | 分类置信度，0-1 |
-| `sft_taxonomy_labels.reason` | string | 分类理由 |
-| `sft_taxonomy_labels.evidence_keywords` | array[string] | 证据关键词 |
-| `sft_taxonomy_labels.candidate_label_ids` | array[string] | 本次给模型的候选标签 ID |
-| `sft_taxonomy_labels.status` | string | `ok` / `no_primary_label` / `api_error` / `worker_error` |
-
-找不到合适分类时：
-
-```json
-{
-  "sft_taxonomy_labels": {
-    "primary": null,
-    "task_types": [],
-    "source_type": "other",
-    "risk_label": "needs_caution",
-    "confidence": 0.3,
-    "reason": "其他：现有分类无法准确覆盖该文本",
-    "evidence_keywords": [],
-    "candidate_label_ids": [
-      "F0001"
-    ],
-    "status": "no_primary_label"
-  }
-}
-```
-
-API 失败时：
-
-```json
-{
-  "sft_taxonomy_labels": {
-    "primary": null,
-    "task_types": [],
-    "source_type": "other",
-    "risk_label": "needs_caution",
-    "confidence": 0.0,
-    "reason": "API分类失败：错误信息",
-    "evidence_keywords": [],
-    "candidate_label_ids": [
-      "F0001"
-    ],
-    "status": "api_error"
-  }
-}
-```
-
-## 4. 问题生成数据
+## 3. 问题生成数据
 
 典型文件：
 
@@ -401,7 +212,7 @@ API 失败时：
 labeled_data/*_questions.jsonl
 ```
 
-来源：分类标签数据。
+来源：材料评分数据。
 
 新增字段：
 
@@ -425,38 +236,10 @@ sft_question
     "issues": [],
     "suggested_use": "建议用途"
   },
-  "sft_taxonomy_labels": {
-    "primary": {
-      "id": "F0143",
-      "side": "friendly",
-      "side_name": "我方",
-      "l1": "我方军事知识与制度",
-      "l2": "主要案例",
-      "leaf": "案例启示生成",
-      "path": [
-        "我方",
-        "我方军事知识与制度",
-        "主要案例",
-        "案例启示生成"
-      ],
-      "source_file": "friendly/03-我方军事知识与制度.md"
-    },
-    "task_types": [
-      "qa",
-      "summary"
-    ],
-    "source_type": "textbook",
-    "risk_label": "public_safe",
-    "confidence": 0.95,
-    "reason": "分类理由",
-    "evidence_keywords": [],
-    "candidate_label_ids": [],
-    "status": "ok"
-  },
   "sft_question": {
     "question": "中国近代国防历史中，抗日战争胜利的主要原因有哪些？",
     "question_type": "summary",
-    "target_label_id": "F0143",
+    "target_label_id": "",
     "expected_answer_format": "bullets",
     "difficulty": "medium",
     "risk_label": "public_safe",
@@ -472,7 +255,7 @@ sft_question
 |---|---|---|
 | `sft_question.question` | string | 生成的问题，也是最终 SFT 的 `instruction` |
 | `sft_question.question_type` | string | `qa` / `summary` / `extraction` / `classification` / `comparison` / `reasoning` / `rewrite` / `json_generation` / `critique` / `refusal` |
-| `sft_question.target_label_id` | string | 目标分类标签 ID |
+| `sft_question.target_label_id` | string | 兼容旧格式的分类标签 ID；新流程通常为空 |
 | `sft_question.expected_answer_format` | string | `plain_text` / `bullets` / `table` / `json` |
 | `sft_question.difficulty` | string | `easy` / `medium` / `hard` |
 | `sft_question.risk_label` | string | 风险标签 |
@@ -492,7 +275,7 @@ sft_question
   "sft_question": {
     "question": "",
     "question_type": "refusal",
-    "target_label_id": "F0143",
+    "target_label_id": "",
     "expected_answer_format": "plain_text",
     "difficulty": "medium",
     "risk_label": "public_safe",
@@ -502,7 +285,7 @@ sft_question
 }
 ```
 
-## 5. 答案生成数据
+## 4. 答案生成数据
 
 典型文件：
 
@@ -516,7 +299,7 @@ labeled_data/*_answers.jsonl
 
 - 保留问题生成阶段的所有字段。
 - 新增 `sft_answer` 字段。
-- 答案生成阶段只把 `sft_question.question` 发给模型，不传原始 `text`、分类或评分。
+- 答案生成阶段只把 `sft_question.question` 发给模型，不传原始 `text` 或评分。
 - 本阶段还不是最终 SFT 格式，后续可再转换为你需要的 `final_sft_data` 格式。
 
 格式：
@@ -535,37 +318,10 @@ labeled_data/*_answers.jsonl
     "issues": [],
     "suggested_use": "建议用途"
   },
-  "sft_taxonomy_labels": {
-    "primary": {
-      "id": "F0119",
-      "side": "friendly",
-      "side_name": "我方",
-      "l1": "我方军事知识与制度",
-      "l2": "军事法规",
-      "leaf": "法规适用条件判断",
-      "path": [
-        "我方",
-        "我方军事知识与制度",
-        "军事法规",
-        "法规适用条件判断"
-      ],
-      "source_file": "friendly/03-我方军事知识与制度.md"
-    },
-    "task_types": [
-      "qa"
-    ],
-    "source_type": "policy_document",
-    "risk_label": "public_safe",
-    "confidence": 0.95,
-    "reason": "分类理由",
-    "evidence_keywords": [],
-    "candidate_label_ids": [],
-    "status": "ok"
-  },
   "sft_question": {
     "question": "根据《国防法》，公民在国防活动中享有哪些权利？这些权利与民事活动中的损害赔偿有何区别？",
     "question_type": "qa",
-    "target_label_id": "F0119",
+    "target_label_id": "",
     "expected_answer_format": "bullets",
     "difficulty": "medium",
     "risk_label": "public_safe",
@@ -609,7 +365,7 @@ labeled_data/*_answers.jsonl
 }
 ```
 
-## 6. 阶段之间的字段继承关系
+## 5. 阶段之间的字段继承关系
 
 ```text
 chunk
@@ -620,12 +376,8 @@ score
   继承 chunk
   新增 sft_material_eval
 
-classified
-  继承 score
-  新增 sft_taxonomy_labels
-
 questions
-  继承 classified
+  继承 score
   新增 sft_question
 
 answers
@@ -636,7 +388,7 @@ final_sft
   后续按需要从 answers 转换
 ```
 
-## 7. 常用枚举值
+## 6. 常用枚举值
 
 ### 任务类型 `task_type/question_type`
 
@@ -659,28 +411,6 @@ refusal
 public_safe
 needs_caution
 refuse_or_exclude
-```
-
-### 来源类型 `source_type`
-
-```text
-textbook
-law_regulation
-policy_document
-press_conference
-news_report
-white_paper
-open_report
-other
-```
-
-### 分类状态 `sft_taxonomy_labels.status`
-
-```text
-ok
-no_primary_label
-api_error
-worker_error
 ```
 
 ### 问题状态 `sft_question.status`
