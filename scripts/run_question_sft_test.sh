@@ -12,7 +12,7 @@ if [[ -f ".env" ]]; then
   set +a
 fi
 
-INPUT="chunk_data/test_200.jsonl"
+INPUT="chunk_data/v1_chunks.jsonl"
 
 SCORES_OUT="labeled_data/question_test_200_scores.jsonl"
 QUESTIONS_OUT="labeled_data/question_test_200_questions.jsonl"

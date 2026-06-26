@@ -1,0 +1,14 @@
+{
+  "input": "D:\\czc\\work\\sft_data\\raw_data\\wiki\\military_pages_title_strict.jsonl",
+  "output": "D:\\czc\\work\\sft_data\\chunk_data\\wiki_military_title_strict_chunks.jsonl",
+  "page_count": 4790,
+  "skipped_pages": 775,
+  "chunk_count": 8539,
+  "min_chars": 180,
+  "max_chars": 1600,
+  "avg_chars": 888.01,
+  "min_chunk_chars_config": 180,
+  "target_chunk_chars_config": 900,
+  "max_chunk_chars_config": 1600,
+  "source_document_count": 4015
+}

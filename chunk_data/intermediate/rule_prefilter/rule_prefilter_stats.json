@@ -1,0 +1,46 @@
+{
+  "input": "chunk_data\\all_text_chunks.jsonl",
+  "output": "chunk_data\\rule_prefiltered_chunks.jsonl",
+  "rejected_output": "chunk_data\\rule_rejected_chunks.jsonl",
+  "total": 4809,
+  "kept": 4326,
+  "rejected": 483,
+  "keep_rate": 0.8996,
+  "min_score": 5.0,
+  "issue_counts": {
+    "weak_military_relevance": 589,
+    "duplicate_text": 326,
+    "short_text": 184,
+    "reference_like_list": 85,
+    "too_short": 71,
+    "low_unique_char_ratio": 57,
+    "repeated_char_noise": 31,
+    "url_heavy": 27,
+    "possible_mojibake": 14,
+    "low_chinese_ratio": 13,
+    "digit_heavy": 6,
+    "reference_heavy": 5,
+    "private_use_chars": 3,
+    "actionable_harm_risk": 1,
+    "duplicate_line_noise": 1,
+    "low_value_boilerplate": 1
+  },
+  "source_prefix_counts": {
+    "1": 1928,
+    "md_from_pdf": 1615,
+    "0": 1251,
+    "_mineru_work": 15
+  },
+  "score_buckets": {
+    "1": 10,
+    "2": 48,
+    "3": 54,
+    "4": 22,
+    "5": 404,
+    "6": 3,
+    "7": 497,
+    "8": 152,
+    "9": 11,
+    "10": 3608
+  }
+}

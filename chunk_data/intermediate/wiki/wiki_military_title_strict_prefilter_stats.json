@@ -1,0 +1,31 @@
+{
+  "input": "chunk_data\\wiki_military_title_strict_chunks.jsonl",
+  "output": "chunk_data\\wiki_military_title_strict_prefiltered_chunks.jsonl",
+  "rejected_output": "chunk_data\\wiki_military_title_strict_rejected_chunks.jsonl",
+  "total": 8539,
+  "kept": 8531,
+  "rejected": 8,
+  "keep_rate": 0.9991,
+  "min_score": 5.0,
+  "issue_counts": {
+    "short_text": 620,
+    "weak_military_relevance": 236,
+    "reference_like_list": 8,
+    "duplicate_line_noise": 6,
+    "low_unique_char_ratio": 5,
+    "possible_mojibake": 4,
+    "digit_heavy": 3,
+    "private_use_chars": 1
+  },
+  "source_prefix_counts": {
+    "wiki": 8539
+  },
+  "score_buckets": {
+    "5": 27,
+    "6": 1,
+    "7": 217,
+    "8": 613,
+    "9": 5,
+    "10": 7676
+  }
+}

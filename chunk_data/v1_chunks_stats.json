@@ -1,0 +1,24 @@
+{
+  "dataset_version": "v1",
+  "output": "D:\\czc\\work\\sft_data\\chunk_data\\v1_chunks.jsonl",
+  "sources": {
+    "existing_rule_prefiltered": {
+      "input": "D:\\czc\\work\\sft_data\\chunk_data\\intermediate\\rule_prefilter\\rule_prefiltered_chunks.jsonl",
+      "rows": 4326,
+      "duplicate_ids_rewritten": 0,
+      "category_counts": {
+        "unknown": 4326
+      }
+    },
+    "wiki_military_title_strict": {
+      "input": "D:\\czc\\work\\sft_data\\chunk_data\\intermediate\\wiki\\wiki_military_title_strict_prefiltered_chunks.jsonl",
+      "rows": 8531,
+      "duplicate_ids_rewritten": 0,
+      "category_counts": {
+        "wiki_military_title_strict": 8531
+      }
+    }
+  },
+  "total_rows": 12857,
+  "duplicate_ids_rewritten": 0
+}

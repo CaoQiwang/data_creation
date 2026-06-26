@@ -25,7 +25,7 @@ raw_data
 
 ## 1. 原始数据到 chunk_data
 
-Markdown 数据通常来自 `raw_data/md_from_pdf/*.md`，由 `scripts/chunk_md.py` 切分。TXT 数据来自 `raw_data/txt/`，由 `scripts/chunk_txt.py` 切分。
+Markdown 数据通常来自 `raw_data/md_from_pdf/*.md`，由 `pre_chunk_scripts/chunking/chunk_md.py` 切分。TXT 数据来自 `raw_data/txt/`，由 `pre_chunk_scripts/chunking/chunk_txt.py` 切分。`scripts/` 目录只保留 chunk 完成后的评估、分类、出题和答题流水线脚本。
 
 标准 chunk 行示例：
 
@@ -51,7 +51,7 @@ Markdown 数据通常来自 `raw_data/md_from_pdf/*.md`，由 `scripts/chunk_md.
 
 ## 2. 材料评分
 
-评分阶段读取 `chunk_data/*.jsonl`，输出到：
+评分阶段建议读取当前第一版主数据 `chunk_data/v1_chunks.jsonl`，输出到：
 
 ```text
 labeled_data/*_scores.jsonl
@@ -61,7 +61,7 @@ labeled_data/*_scores.jsonl
 
 ```powershell
 python scripts\evaluate_sft_material.py `
-  --input chunk_data\test_200.jsonl `
+  --input chunk_data\v1_chunks.jsonl `
   --output labeled_data\full_test_200_scores.jsonl `
   --config configs\eval.json `
   --limit 200
