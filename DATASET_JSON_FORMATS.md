@@ -169,11 +169,17 @@ sft_material_eval
   "chunk_index": 2,
   "char_count": 997,
   "sft_material_eval": {
-    "score": 9,
-    "quality_level": "优秀",
-    "reason": "内容紧扣国防政策、战略类型等军事领域核心主题，信息完整且结构清晰，具有较高的训练价值。",
+    "reason": "内容紧扣国防政策、战略类型等军事领域核心主题，信息完整且结构清晰，适合生成多类型问题。",
     "issues": [],
-    "suggested_use": "适合用于构造关于国防政策、国防类型、军事战略等的高质量SFT问答样本。"
+    "suggested_use": "适合用于生成概念解释、结构化分类和提纲类问题。",
+    "recommended_question_count": 3,
+    "recommended_question_types": ["qa", "classification", "outline"],
+    "question_type_plan": [
+      {"question_type": "qa", "count": 1, "reason": "材料包含明确概念，可生成基础问答。"},
+      {"question_type": "classification", "count": 1, "reason": "材料包含分类维度，可生成分类题。"},
+      {"question_type": "outline", "count": 1, "reason": "材料结构清晰，可生成学习提纲题。"}
+    ],
+    "question_count_reason": "材料有多个不同能力方向的信息点，推荐生成 3 个不同题型的问题。"
   }
 }
 ```
@@ -182,24 +188,28 @@ sft_material_eval
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
-| `sft_material_eval.score` | number | 0-10 分质量评分 |
-| `sft_material_eval.quality_level` | string | `不可用` / `较差` / `可用` / `良好` / `优秀` |
-| `sft_material_eval.reason` | string | 评分理由 |
+| `sft_material_eval.reason` | string | 出题规划理由 |
 | `sft_material_eval.issues` | array[string] | 主要问题 |
-| `sft_material_eval.suggested_use` | string | 建议用于何种 SFT 构造 |
+| `sft_material_eval.suggested_use` | string | 建议用于何种问题生成 |
+| `sft_material_eval.recommended_question_count` | number | 建议为该 chunk 生成的问题总数 |
+| `sft_material_eval.recommended_question_types` | array[string] | 推荐题型列表，由 `question_type_plan` 汇总得到 |
+| `sft_material_eval.question_type_plan` | array[object] | 写死给下一阶段执行的题型计划，每项包含 `question_type`、`count`、`reason` |
+| `sft_material_eval.question_count_reason` | string | 推荐问题数量和题型的理由 |
 
 异常情况：
 
 ```json
 {
   "sft_material_eval": {
-    "score": 0,
-    "quality_level": "不可用",
     "reason": "API评估失败：错误信息",
     "issues": [
       "api_error"
     ],
-    "suggested_use": "不建议使用，需重新评估"
+    "suggested_use": "不建议使用，需重新评估",
+    "recommended_question_count": 0,
+    "recommended_question_types": [],
+    "question_type_plan": [],
+    "question_count_reason": "API评估失败，无法推荐问题数量和类型。"
   }
 }
 ```
@@ -230,12 +240,25 @@ sft_question
   "chunk_index": 4,
   "char_count": 930,
   "sft_material_eval": {
-    "score": 7,
-    "quality_level": "良好",
-    "reason": "评分理由",
+    "reason": "出题规划理由",
     "issues": [],
-    "suggested_use": "建议用途"
+    "suggested_use": "建议用途",
+    "recommended_question_count": 2,
+    "recommended_question_types": ["summary", "outline"],
+    "question_type_plan": [
+      {"question_type": "summary", "count": 1, "reason": "适合生成总结题。"},
+      {"question_type": "outline", "count": 1, "reason": "适合生成提纲题。"}
+    ],
+    "question_count_reason": "推荐生成两个不同题型的问题。"
   },
+  "material_id": "md_from_pdf/MinerU_markdown_军事理论教程.md#00004",
+  "question_index": 1,
+  "question_count": 2,
+  "planned_question_type": "summary",
+  "question_type_plan": [
+    {"question_type": "summary", "count": 1, "reason": "适合生成总结题。"},
+    {"question_type": "outline", "count": 1, "reason": "适合生成提纲题。"}
+  ],
   "sft_question": {
     "question": "中国近代国防历史中，抗日战争胜利的主要原因有哪些？",
     "question_type": "summary",
@@ -253,8 +276,13 @@ sft_question
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
+| `material_id` | string | 原始 chunk ID |
+| `question_index` | number | 该材料下的问题序号 |
+| `question_count` | number | 该材料实际生成的问题总数 |
+| `planned_question_type` | string | 规划阶段指定给该问题的题型 |
+| `question_type_plan` | array[object] | 该材料完整题型计划的副本 |
 | `sft_question.question` | string | 生成的问题，也是最终 SFT 的 `instruction` |
-| `sft_question.question_type` | string | `qa` / `summary` / `extraction` / `classification` / `comparison` / `reasoning` / `rewrite` / `json_generation` / `critique` / `refusal` |
+| `sft_question.question_type` | string | `qa` / `summary` / `extraction` / `classification` / `comparison` / `reasoning` / `rewrite` / `json_generation` / `critique` / `refusal` / `drafting` / `plan` / `outline` |
 | `sft_question.target_label_id` | string | 兼容旧格式的分类标签 ID；新流程通常为空 |
 | `sft_question.expected_answer_format` | string | `plain_text` / `bullets` / `table` / `json` |
 | `sft_question.difficulty` | string | `easy` / `medium` / `hard` |
@@ -403,6 +431,9 @@ rewrite
 json_generation
 critique
 refusal
+drafting
+plan
+outline
 ```
 
 ### 风险标签 `risk_label`

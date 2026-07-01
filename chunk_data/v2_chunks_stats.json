@@ -1,0 +1,57 @@
+{
+  "dataset_version": "v2",
+  "built_at": "2026-06-29T09:36:17.580261+00:00",
+  "output": "D:/czc/work/sft_data/chunk_data/v2_chunks.jsonl",
+  "sources": {
+    "pdf_guofang_keji_v2": {
+      "chunks": 520,
+      "chars": 589301,
+      "examples": [
+        "pdf_gfk#000001",
+        "pdf_gfk#000002",
+        "pdf_gfk#000003"
+      ]
+    },
+    "pdf_junshi_lishi_v2": {
+      "chunks": 926,
+      "chars": 1013970,
+      "examples": [
+        "pdf_jsl#000001",
+        "pdf_jsl#000002",
+        "pdf_jsl#000003"
+      ]
+    },
+    "raw_md_v2": {
+      "chunks": 1404,
+      "chars": 1471263,
+      "examples": [
+        "raw_md_v2/raw_data/md_from_pdf/MinerU_markdown_军事理论教程.md#00001",
+        "raw_md_v2/raw_data/md_from_pdf/MinerU_markdown_军事理论教程.md#00002",
+        "raw_md_v2/raw_data/md_from_pdf/MinerU_markdown_军事理论教程.md#00003"
+      ]
+    },
+    "raw_txt_v2": {
+      "chunks": 29146,
+      "chars": 23266729,
+      "examples": [
+        "raw_txt_v2/raw_data/txt/0/00_white_papers/《中国军队参加联合国维和行动30年》白皮书.txt#00001",
+        "raw_txt_v2/raw_data/txt/0/00_white_papers/《中国军队参加联合国维和行动30年》白皮书.txt#00002",
+        "raw_txt_v2/raw_data/txt/0/00_white_papers/《中国军队参加联合国维和行动30年》白皮书.txt#00003"
+      ]
+    },
+    "wiki_military_title_strict_v2": {
+      "chunks": 8531,
+      "chars": 7640328,
+      "examples": [
+        "wiki#000001",
+        "wiki#000002",
+        "wiki#000003"
+      ]
+    }
+  },
+  "total_chunks": 40527,
+  "total_chars": 33981591,
+  "duplicates_skipped": 6843,
+  "too_short_skipped": 0,
+  "dedupe_hashes": 40527
+}

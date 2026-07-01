@@ -20,28 +20,28 @@ except ImportError:
 from evaluate_sft_material import compact_text, expand_env_vars, extract_json_object, load_done_ids, read_jsonl
 
 
-SYSTEM_PROMPT = """你是军事领域SFT数据的分类标注专家。
-任务：根据给定文本、评估结果和候选分类目录，为文本打上最合适的SFT能力分类标签。
+SYSTEM_PROMPT = """你是军事领域SFT数据的问题分类标注专家。
+任务：根据已经生成并通过质量过滤的 SFT 问题，以及候选分类目录，为问题打上最合适的SFT能力分类标签。
 
 分类原则：
 1. 只在候选分类ID中选择，不要创造不存在的标签。
-2. 优先选择文本能直接支撑生成SFT样本的能力标签，而不是只按出现的关键词机械匹配。
-3. 每条文本只打一个最合适的标签，不要输出辅标签。
-4. 对公开新闻、教材、法规、白皮书等材料，按其可生成的问答、摘要、抽取、对比、研判、文书等任务能力归类。
-5. 侧别判断要严格：涉及中国国防、我军、我国军队建设、国内国防法规政策、军队院校教材、国防教育等内容，默认归“我方”；只有文本明确以外国军队、外方国家、对手能力、外军制度、外军行动、外部威胁为分析对象时，才归“他方”。
-6. 避免把包含具体攻击、武器制造、规避监控、行动实施等可操作伤害内容标为可训练的操作类能力；这类内容应给出更高风险标签。
-7. 如果候选分类中没有明显合适的标签，不要硬选。此时返回 primary_label_id 为 null，confidence 不高于 0.35，reason 中说明“其他：现有分类无法准确覆盖该文本”。
-8. 如果文本军事相关性弱、主题太泛、只是目录/残缺片段，或只能归入非常宽泛的“其他”，也返回 primary_label_id 为 null。
-9. 只有在分类路径和文本主题有直接对应关系时才选择标签；弱关键词重合不能作为选择依据。
+2. 分类对象是“问题本身”，不是原始材料。不要因为材料来源、材料正文或出题规划里出现某个词，就给问题打材料主题标签。
+3. 优先选择该问题最终会训练的能力标签，例如问答、摘要、对比、研判、文书、计划、提纲、风险辨析、知识整理等。
+4. 每个问题只打一个最合适的主标签，不要输出辅标签。
+5. 侧别判断要严格：问题关注中国国防、我军、我国军队建设、国内国防法规政策、军队院校教材、国防教育等内容，默认归“我方”；只有问题明确以外国军队、外方国家、对手能力、外军制度、外军行动、外部威胁为分析对象时，才归“他方”。
+6. 避免把包含具体攻击、武器制造、规避监控、行动实施等可操作伤害内容的问题标为可训练的操作类能力；这类内容应给出更高风险标签。
+7. 如果候选分类中没有明显合适的标签，不要硬选。此时返回 primary_label_id 为 null，confidence 不高于 0.35，reason 中说明“其他：现有分类无法准确覆盖该问题”。
+8. 如果问题军事相关性弱、主题太泛、任务边界不清，或只能归入非常宽泛的“其他”，也返回 primary_label_id 为 null。
+9. 只有在分类路径和问题主题/任务能力有直接对应关系时才选择标签；弱关键词重合不能作为选择依据。
 
 只返回一个JSON对象，不要输出Markdown，不要输出多余解释。JSON字段：
 {
   "primary_label_id": "候选分类ID或null；找不到合适分类时必须为null",
-  "task_types": ["qa/summary/extraction/classification/comparison/reasoning/rewrite/json_generation/critique/refusal"],
+  "task_types": ["qa/summary/extraction/classification/comparison/reasoning/rewrite/json_generation/critique/refusal/drafting/plan/outline"],
   "source_type": "textbook/law_regulation/policy_document/press_conference/news_report/white_paper/open_report/other",
   "risk_label": "public_safe/needs_caution/refuse_or_exclude",
   "confidence": 0.0-1.0,
-  "reason": "一句话说明分类依据；找不到合适分类时以“其他：”开头说明原因",
+  "reason": "一句话说明问题分类依据；找不到合适分类时以“其他：”开头说明原因",
   "evidence_keywords": ["关键词1", "关键词2"]
 }
 """
@@ -66,14 +66,14 @@ class ClassifierConfig:
     candidate_count: int = 60
 
 
-class SFTMaterialClassifier:
+class SFTQuestionClassifier:
     def __init__(self, config: ClassifierConfig, labels: list[dict[str, Any]]) -> None:
         self.config = config
         self.labels = labels
         self._label_tokens = [make_tokens(label_text(label)) for label in labels]
 
     @classmethod
-    def from_files(cls, config_path: str | Path, taxonomy_path: str | Path) -> "SFTMaterialClassifier":
+    def from_files(cls, config_path: str | Path, taxonomy_path: str | Path) -> "SFTQuestionClassifier":
         config = load_classify_config(Path(config_path))
         taxonomy = json.loads(Path(taxonomy_path).read_text(encoding="utf-8"))
         labels = load_taxonomy_labels(taxonomy)
@@ -119,15 +119,16 @@ class SFTMaterialClassifier:
 
     def select_candidates(self, row: dict[str, Any]) -> list[dict[str, Any]]:
         text_parts = [
-            str(row.get("source", "")),
-            str(row.get("text", "")),
+            question_text(row),
+            str(sft_question(row).get("question_type", "")),
+            str(sft_question(row).get("reason", "")),
         ]
-        eval_result = row.get("sft_material_eval")
-        if isinstance(eval_result, dict):
+        question_eval = row.get("sft_question_eval")
+        if isinstance(question_eval, dict):
             text_parts.extend(
                 [
-                    str(eval_result.get("reason", "")),
-                    str(eval_result.get("suggested_use", "")),
+                    str(question_eval.get("reason", "")),
+                    str(question_eval.get("rewrite_suggestion", "")),
                 ]
             )
         text = "\n".join(text_parts)
@@ -159,23 +160,32 @@ class SFTMaterialClassifier:
         return (positive + fallback)[: self.config.candidate_count]
 
     def _build_user_prompt(self, row: dict[str, Any], candidates: list[dict[str, Any]]) -> str:
-        text = compact_text(str(row.get("text", "")), self.config.max_input_chars)
-        eval_result = row.get("sft_material_eval", {})
+        question = sft_question(row)
+        question_eval = row.get("sft_question_eval", {})
         candidate_lines = [format_candidate_for_prompt(item) for item in candidates]
+        context = {
+            "id": row.get("id", ""),
+            "material_id": row.get("material_id", ""),
+            "source": row.get("source", ""),
+            "question": question.get("question", ""),
+            "question_type": question.get("question_type", ""),
+            "expected_answer_format": question.get("expected_answer_format", ""),
+            "difficulty": question.get("difficulty", ""),
+            "risk_label": question.get("risk_label", ""),
+            "generation_reason": question.get("reason", ""),
+            "question_eval": question_eval,
+        }
 
         return "\n".join(
             [
-                "请为下面文本选择分类标签。",
+                "请为下面这个已生成的问题选择分类标签。",
+                "分类依据应以 question 字段和问题任务能力为主；source、material_id 只用于审计，不应替代问题本身。",
                 "",
-                f"样本ID：{row.get('id', '')}",
-                f"来源：{row.get('source', '')}",
-                f"已有质量评估：{json.dumps(eval_result, ensure_ascii=False)}",
+                "问题信息：",
+                compact_text(json.dumps(context, ensure_ascii=False), self.config.max_input_chars),
                 "",
                 "候选分类：",
                 "\n".join(candidate_lines),
-                "",
-                "文本：",
-                text,
             ]
         )
 
@@ -389,12 +399,57 @@ def normalize_classification(raw: dict[str, Any], candidates: list[dict[str, Any
     }
 
 
+def sft_question(row: dict[str, Any]) -> dict[str, Any]:
+    question = row.get("sft_question")
+    if isinstance(question, dict):
+        return question
+    return {}
+
+
+def question_text(row: dict[str, Any]) -> str:
+    return str(sft_question(row).get("question") or "").strip()
+
+
+def question_score(row: dict[str, Any]) -> int:
+    result = row.get("sft_question_eval")
+    if not isinstance(result, dict):
+        return 0
+    try:
+        return int(result.get("score", 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def should_classify(row: dict[str, Any], min_question_score: int, include_refuse_risk: bool) -> bool:
+    question = sft_question(row)
+    if not question_text(row):
+        return False
+    if question.get("status") not in {None, "ok"}:
+        return False
+    if not include_refuse_risk and question.get("risk_label") == "refuse_or_exclude":
+        return False
+    question_eval = row.get("sft_question_eval")
+    if isinstance(question_eval, dict) and question_eval.get("pass_filter") is False:
+        return False
+    if min_question_score > 0 and question_score(row) < min_question_score:
+        return False
+    return True
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Classify evaluated SFT material JSONL rows with an LLM and taxonomy labels."
+        description="Classify generated SFT question JSONL rows with an LLM and taxonomy labels."
     )
-    parser.add_argument("--input", required=True, help="Input evaluated JSONL file, usually under labeled_data.")
-    parser.add_argument("--output", required=True, help="Output classified JSONL file, recommended under labeled_data.")
+    parser.add_argument(
+        "--input",
+        required=True,
+        help="Input question JSONL file, preferably after filter_sft_questions.py.",
+    )
+    parser.add_argument(
+        "--output",
+        required=True,
+        help="Output classified question JSONL file, recommended under labeled_data.",
+    )
     parser.add_argument("--config", default="configs/classify.json", help="API config JSON file.")
     parser.add_argument(
         "--taxonomy",
@@ -405,22 +460,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workers", type=int, default=4, help="Concurrent API request workers.")
     parser.add_argument("--skip-done", action="store_true", help="Skip ids already present in output.")
     parser.add_argument(
-        "--min-score",
+        "--min-question-score",
         type=int,
         default=0,
-        help="Only classify rows whose sft_material_eval.score is at least this value.",
+        help="Only classify rows whose sft_question_eval.score is at least this value. 0 means no threshold.",
+    )
+    parser.add_argument(
+        "--include-refuse-risk",
+        action="store_true",
+        help="Also classify questions marked refuse_or_exclude. By default they are skipped.",
     )
     return parser.parse_args()
-
-
-def eval_score(row: dict[str, Any]) -> int:
-    result = row.get("sft_material_eval")
-    if not isinstance(result, dict):
-        return 0
-    try:
-        return int(result.get("score", 0))
-    except (TypeError, ValueError):
-        return 0
 
 
 def main() -> None:
@@ -428,9 +478,14 @@ def main() -> None:
     input_path = Path(args.input)
     output_path = Path(args.output)
 
-    rows = read_jsonl(input_path)
-    if args.min_score > 0:
-        rows = [row for row in rows if eval_score(row) >= args.min_score]
+    if args.min_question_score < 0:
+        raise ValueError("--min-question-score must be greater than or equal to 0")
+
+    rows = [
+        row
+        for row in read_jsonl(input_path)
+        if should_classify(row, args.min_question_score, args.include_refuse_risk)
+    ]
     if args.skip_done:
         done_ids = load_done_ids(output_path)
         rows = [row for row in rows if row.get("id") not in done_ids]
@@ -439,7 +494,7 @@ def main() -> None:
     if args.workers <= 0:
         raise ValueError("--workers must be greater than 0")
 
-    classifier = SFTMaterialClassifier.from_files(args.config, args.taxonomy)
+    classifier = SFTQuestionClassifier.from_files(args.config, args.taxonomy)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     mode = "a" if args.skip_done else "w"
@@ -448,7 +503,7 @@ def main() -> None:
         result = classifier.classify_row(row)
         output_row = dict(row)
         output_row.pop("headings", None)
-        output_row["sft_taxonomy_labels"] = result
+        output_row["sft_question_taxonomy_labels"] = result
         if classifier.config.sleep > 0:
             time.sleep(classifier.config.sleep)
         return output_row
@@ -467,7 +522,7 @@ def main() -> None:
                 except Exception as exc:
                     output_row = dict(row)
                     output_row.pop("headings", None)
-                    output_row["sft_taxonomy_labels"] = {
+                    output_row["sft_question_taxonomy_labels"] = {
                         "primary": None,
                         "task_types": [],
                         "source_type": "other",
@@ -479,7 +534,7 @@ def main() -> None:
                         "status": "worker_error",
                     }
 
-                result = output_row["sft_taxonomy_labels"]
+                result = output_row["sft_question_taxonomy_labels"]
                 f.write(json.dumps(output_row, ensure_ascii=False) + "\n")
                 f.flush()
 
@@ -489,7 +544,7 @@ def main() -> None:
                 else:
                     print(f"[{index}/{len(rows)}] primary={primary} risk={result['risk_label']}")
 
-    print(f"Classified rows: {len(rows)}")
+    print(f"Classified question rows: {len(rows)}")
     print(f"Output: {output_path.resolve()}")
 
 
