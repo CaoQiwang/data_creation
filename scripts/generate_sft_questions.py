@@ -174,7 +174,6 @@ class SFTQuestionGenerator:
             "messages": messages,
             "temperature": self.config.temperature,
             "max_tokens": self.config.max_output_tokens,
-            "response_format": {"type": "json_object"},
         }
         if self.config.extra_body:
             payload.update(self.config.extra_body)
